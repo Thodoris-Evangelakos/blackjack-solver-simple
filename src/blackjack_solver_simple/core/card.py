@@ -55,7 +55,7 @@ class Card:
             return 11 if ace_high else 1
         return min(int(self.rank), 10)
 
-    def hilo_weights(self) -> int:
+    def hilo_weight(self) -> int:
         return _HI_LO[self.rank]
 
     # ~~~~~~~~~~ dunder methods ~~~~~~~~~~ #

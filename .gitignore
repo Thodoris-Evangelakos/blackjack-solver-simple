@@ -1,3 +1,6 @@
 /.vscode
-/src/blackjack_solver_simple/__pycache__
-/src/blackjack_solver_simple/core/__pycache__
+
+
+**/__pycache__
+**/__pycache__/
+**/__pycache__/**
