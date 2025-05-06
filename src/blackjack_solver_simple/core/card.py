@@ -56,6 +56,11 @@ class Card:
         return min(int(self.rank), 10)
 
     def hilo_weight(self) -> int:
+        """Returns the weight of the card for Hi-Lo counting.
+
+        Returns:
+            int: weight of the card
+        """
         return _HI_LO[self.rank]
 
     # ~~~~~~~~~~ dunder methods ~~~~~~~~~~ #
@@ -73,3 +78,13 @@ class Card:
 
     def __hash__(self) -> int:
         return hash((self.rank, self.suit))
+
+
+if __name__ == "__main__":
+    # test primarily for the dunder methods
+    # these are just for quick testing, refer to the test files for more thorough tests
+    card = Card(Rank.ACE, Suit.SPADES)
+    print(card)  # A♠
+    print(card.blackjack_value())  # 11
+    print(card.hilo_weight())  # -1
+    print(card == Card(Rank.ACE, Suit.SPADES))  # True
