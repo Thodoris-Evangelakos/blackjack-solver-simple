@@ -1,0 +1,5 @@
+[project]
+name = "blackjack_solver_simple"
+version = "0.0.1"
+description = "Simple blackjack solver for phase 1 of the RL course project"
+authors = [{ name = "Thodoris", email = "thodorisevangelakos@gmail.com"}]

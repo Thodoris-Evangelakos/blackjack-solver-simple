@@ -1,5 +1,5 @@
 import pytest
-from blackjack-1.core.card import Card, Rank, Suit
+from blackjack_solver_simple.core.card import Card, Rank, Suit
 
 def test_ace_values():
     ace = Card(Rank.ACE, Suit.SPADES)
