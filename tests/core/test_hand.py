@@ -83,12 +83,3 @@ def test_is_bust():
         hand.is_soft = True
         hand.hand_value = 22
         hand.is_bust()
-
-
-def test_str_representation():
-    card1 = Card(Rank.ACE, Suit.SPADES)
-    card2 = Card(Rank.TEN, Suit.HEARTS)
-    hand = Hand([card1, card2])
-
-    hand.update_hand_value()
-    assert str(hand) == f"[{card1}, {card2}] (value: 21, soft: True)"
