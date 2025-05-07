@@ -1,6 +1,5 @@
 import random
 import pytest
-from blackjack_solver_simple.core.card import Card, Rank, Suit
 from blackjack_solver_simple.core.deck import Deck
 
 
@@ -32,4 +31,3 @@ def test_shuffle_changes_order():
     d2 = Deck(rng1)
     d1 = Deck(random.Random(999))
     assert d1.draw(52) != d2.draw(52)
-

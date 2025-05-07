@@ -31,7 +31,7 @@ class Deck:
         Returns:
             list[Card]: drawn cards.
         """
-        
+
         # I should consider catching this and making a new deck instead
         # the deck is supposed to auto-renew once we're at less tha 10 cards anyway
         if n > self.cards_left():

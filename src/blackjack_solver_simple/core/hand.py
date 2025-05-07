@@ -49,7 +49,7 @@ class Hand:
         """Calculates the highest possible value of the hand and updates the hand_value attribute.
            Also updates the is_soft boolean. Converts aces from high to low until it is under 21 or runs out of aces.
            The whole idea behind this is avoiding the need to calculate the 2^(#aces) possible values of the hand.
-           
+
 
         Returns:
             None: Doesn't return anything, use a get method to get the value after updating
@@ -91,8 +91,8 @@ class Hand:
     # ~~~~~~~~~~ dunder methods ~~~~~~~~~~ #
 
     def __str__(self) -> str:
-        return f"[{' '.join(str(c) for c in self.cards)}] (value: {self.hand_value}, soft: {self.is_soft})"    
-    
+        return f"[{' '.join(str(c) for c in self.cards)}] (value: {self.hand_value}, soft: {self.is_soft})"
+
     def __itter__(self):
         """Allows iteration over the cards in the hand."""
         return iter(self.cards)
