@@ -18,7 +18,7 @@ class BlackJackEnv:
     def __init__(self, player_policy: Policy, *, rng: random.Random | None = None, counting_cards: bool = False) -> None:
         self.rng = rng or random.Random()
         self.deck: Deck = Deck(self.rng)
-        
+
         self.visible_count: int = 0
         self._counting_cards = counting_cards
 
@@ -31,6 +31,11 @@ class BlackJackEnv:
 
     # ~~~~~~~~~~ helper methods ~~~~~~~~~~ #
     def _add_visible(self, card: Card) -> None:
+        """Updates the visible card "score", whenever a new card is revealed
+
+        Args:
+            card (Card): The card that was revealed
+        """
         self.visible_count += card.hilo_weight()
 
     def _bin_count(self) -> int | None:
@@ -104,3 +109,124 @@ class BlackJackEnv:
 
         self._last_state = self._encode_state()
         return self._last_state
+
+    def step(self, action: str) -> Tuple[BJState, int, bool, dict[str, Any]]:
+        """The state of events directly after the initial deal
+
+        Args:
+            action (str): _description_
+
+        Raises:
+            RuntimeError: _description_
+            ValueError: _description_
+
+        Returns:
+            Tuple[BJState, int, bool, dict[str, Any]]: _description_
+        """
+        if self._done:
+            raise RuntimeError("Game is already done, please reset the environment")
+
+        if action not in ("hit", "stand"):
+            # IIRC i've set it up so only one of the 2 can be returned
+            raise ValueError(f"Invalid action: {action}, must be 'hit' or 'stand'")
+
+        reward = _DRAW  # default
+
+        # ~~~~~~~~~~ player action ~~~~~~~~~~ #
+        if action == "hit":
+            card = self.deck.draw(1)[0]
+            self.player.hand.add_cards([card])
+            self._done = True
+
+            if self.player.hand.is_bust():
+                reward = _LOSE
+                self._done = True
+
+            elif self.player.hand.is_blackjack():
+                # technically this is wrong, if both parties have a BJ it should draw
+                # I probably should force a dealer action here to resolve this
+                # chance of this happening is 0.177%, shouldn't effect model performance
+                reward = _WIN
+                self._done = True
+
+        # ~~~~~~~~~~ dealer action ~~~~~~~~~~ #
+        elif action == "stand":
+            self._dealer_turn()
+            reward = self._resolve_reward()
+            self._done = True
+
+        self._last_state = self._encode_state()
+        return (self._last_state, reward, self._done, {})
+
+    def _dealer_turn(self) -> None:
+        # reveal hole card
+        card = self.dealer.hole_card
+        if card is None:
+            raise RuntimeError("Dealer's hole card is missing, debug")
+        self.dealer.hand.add_cards([card])
+        self._add_visible(card)
+        self.dealer.hole_card = None
+
+        # policy loop
+        while True:
+            total, soft = self.dealer.hand.hand_value, self.dealer.hand.is_soft
+            # we only really care about total and soft, can prob remove other values, might piss off BJState definition
+            dealer_state = BJState(
+                player_total=None,
+                dealer_up=self._dealer_up_value,
+                player_soft=None,
+                count_bin=self._bin_count(),  # could be None?
+                dealer_total=total,
+                dealer_soft=soft,
+            )
+            action = self.dealer.policy.decide(dealer_state)
+            if action == "stand":
+                # game ends pretty much
+                break
+            card = self.deck.draw(1)[0]
+            self.dealer.hand.add_cards([card])
+            self._add_visible(card)
+            if self.dealer.hand.is_bust():
+                # dealer busts, player wins
+                break
+            elif self.dealer.hand.is_blackjack():
+                # dealer has a blackjack, player loses
+                break
+
+    def _resolve_reward(self) -> int:
+        player_bust = self.player.hand.is_bust()
+        dealer_bust = self.dealer.hand.is_bust()
+
+        if player_bust:
+            return _LOSE
+        if dealer_bust:
+            return _WIN
+
+        player_value = self.player.hand.hand_value
+        dealer_value = self.dealer.hand.hand_value
+
+        if player_value > dealer_value:
+            return _WIN
+        if player_value < dealer_value:
+            return _LOSE
+        return _DRAW
+
+
+if __name__ == "__main__":
+    from blackjack_solver_simple.agents.policies import RandomPolicy
+
+    env = BlackJackEnv(player_policy=RandomPolicy())
+    state = env.reset()
+    print("\nNew round --------------------------------")
+    print("Initial state:", state)
+
+    done = False
+    reward = 0
+    while not done:
+        action = env.player.decide(state)
+        print(f"> Player action: {action}")
+        state, reward, done, _ = env.step(action)
+        print("  New state:", state)
+
+    outcome = {1: "WIN", 0: "DRAW", -1: "LOSE"}[reward]
+    print(f"\n🏁 Round finished — player {outcome} (reward {reward})\n")
