@@ -111,14 +111,16 @@ class BlackJackEnv:
         return self._last_state
 
     def step(self, action: str) -> Tuple[BJState, int, bool, dict[str, Any]]:
-        """The state of events directly after the initial deal
+        """The standard part of the round, directly after a reset or a hit.
+           External logic makes sure this repeats until _done = True is returned
+           Once the player stands the torch is passed over to the dealer
 
         Args:
-            action (str): _description_
+            action (str): Whether the player hits or stands ("hit" or "stand")
 
         Raises:
-            RuntimeError: _description_
-            ValueError: _description_
+            RuntimeError: Game is already done, we should't be here
+            ValueError: Something other than "hit" or "stand" was passed as an action
 
         Returns:
             Tuple[BJState, int, bool, dict[str, Any]]: _description_
@@ -136,7 +138,7 @@ class BlackJackEnv:
         if action == "hit":
             card = self.deck.draw(1)[0]
             self.player.hand.add_cards([card])
-            self._done = True
+            self._add_visible(card)
 
             if self.player.hand.is_bust():
                 reward = _LOSE
@@ -159,6 +161,12 @@ class BlackJackEnv:
         return (self._last_state, reward, self._done, {})
 
     def _dealer_turn(self) -> None:
+        """Implements the dealer's flow (logic is handled in decide()). First reveals the hole card,
+           then plays until he stands or busts.
+
+        Raises:
+            RuntimeError: This is called only onece, after the player stands, so there should always be a hole card
+        """
         # reveal hole card
         card = self.dealer.hole_card
         if card is None:
@@ -167,7 +175,7 @@ class BlackJackEnv:
         self._add_visible(card)
         self.dealer.hole_card = None
 
-        # policy loop
+        # policy based .decide() loop
         while True:
             total, soft = self.dealer.hand.hand_value, self.dealer.hand.is_soft
             # we only really care about total and soft, can prob remove other values, might piss off BJState definition
@@ -194,6 +202,12 @@ class BlackJackEnv:
                 break
 
     def _resolve_reward(self) -> int:
+        """Once a game ending event has transpired (player/dealer bj/bust/+stand), this function decides who won.
+           Standard bj rules apply, but I should probably add in the double bj logic. Some other time
+
+        Returns:
+            int: _description_
+        """
         player_bust = self.player.hand.is_bust()
         dealer_bust = self.dealer.hand.is_bust()
 
@@ -213,6 +227,8 @@ class BlackJackEnv:
 
 
 if __name__ == "__main__":
+    """Small demo
+    """
     from blackjack_solver_simple.agents.policies import RandomPolicy
 
     env = BlackJackEnv(player_policy=RandomPolicy())
