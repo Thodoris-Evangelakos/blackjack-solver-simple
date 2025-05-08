@@ -2,7 +2,7 @@
 name = "blackjack_solver_simple"
 version = "0.0.1"
 description = "Simple blackjack solver for phase 1 of the RL course project"
-authors = [{ name = "Thodoris", email = "thodorisevangelakos@gmail.com"}, { name = "Haris", email = "choulis@tuc.gr?"}]
+authors = [{ name = "Thodoris", email = "thodorisevangelakos@gmail.com"}, { name = "Haris", email = "cchoulis@tuc.gr"}]
 #toml [project.optional-dependencies]
 #gui = ["nicegui>=1.4"]
 #dev = ["pytest", "flake8"]
