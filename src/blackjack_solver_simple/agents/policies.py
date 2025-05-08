@@ -14,5 +14,3 @@ class RandomPolicy(Policy):
 class TabularQPolicy:
     # TODO
     ...
-
-
