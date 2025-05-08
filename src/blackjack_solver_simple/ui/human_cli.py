@@ -2,11 +2,12 @@
 
 from typing import Tuple
 from blackjack_solver_simple.core.players.base import Policy
+from blackjack_solver_simple.core.state import BJState
 
 
 class HumanCliPolicy(Policy):
     
-    def decide(self, state: Tuple) -> str:
+    def decide(self, state: BJState) -> str:
         """Player chooses whether to hit or stand based on CLI input.
 
         Args:
