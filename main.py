@@ -109,6 +109,11 @@ def _calculate_epsilon(episode: int) -> float:
     return (min(1.0, (2 * np.log(episode + 1))**(1/3) / (episode + 1)**(1/3)))
 
 
+def encode_state(state: BJStateQ) -> str:
+    """Encode the state as a string for use as a dictionary key."""
+    return f"{state.player_total}_{state.dealer_up}_{int(state.player_soft)}"
+
+
 # I don't really like the idea of exposing all of this to main.py, looks really messy
 def train_agent(episodes: int, rng_seed: int | None, save_path: str = "tables/q_table.pkl.gz") -> None:
     rng = random.Random(rng_seed)
@@ -119,11 +124,14 @@ def train_agent(episodes: int, rng_seed: int | None, save_path: str = "tables/q_
         state = env.reset()
         done = False
         while not done:
-            action = env.player.decide(state)
+            _state = encode_state(_phase_1_state_conversion(state))
+            action = env.player.decide(_state)
             next_state, reward, done, _ = env.step(action)
-            policy._update(_phase_1_state_conversion(state), action, reward, done, _phase_1_state_conversion(next_state))
+            # attempting to encode the state as a string for use as a dictionary key
+            # this is a bit of a hack, but it works
+            _next_state = encode_state(_phase_1_state_conversion(next_state))
+            policy._update(_state, action, reward, done, _next_state)
             state = next_state
-        reward = 
         policy.epsilon = _calculate_epsilon(ep)
         #print(f"\rEpisode {ep + 1}/{episodes} - Epsilon: {policy.epsilon:.2f}", end="")
 
@@ -152,11 +160,13 @@ def eval_agent(table_path: str, episodes: int, rng_seed: int | None) -> None:
     wins = 0
     for ep in range(episodes):
         state = env.reset()
+        _state = encode_state(_phase_1_state_conversion(state))
         done = False
         while not done:
-            action = env.player.decide(state)
+            action = env.player.decide(_state)
             state, reward, done, _ = env.step(action)
         if reward == 1:
+            print("WIN")
             wins += 1
         #print(f"\rEpisode {ep + 1}/{episodes} - Wins: {wins}", end="")
 

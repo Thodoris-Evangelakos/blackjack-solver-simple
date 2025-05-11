@@ -1,13 +1,13 @@
 from __future__ import annotations
 from abc import ABC
-from typing import Protocol, Tuple
+from typing import Protocol
 # care for circular import
 from blackjack_solver_simple.core.hand import Hand
-from blackjack_solver_simple.core.state import BJState
+from blackjack_solver_simple.core.state import BJState, BJStateQ
 
 
 class Policy(Protocol):
-    def decide(self, state: BJState) -> str:
+    def decide(self, state: BJState | BJStateQ) -> str:
         ...
 
 

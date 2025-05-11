@@ -58,14 +58,16 @@ class TabularQPolicy(Policy):
         else:
             raise ValueError(f"Invalid action: {action}")
 
-    def decide(self, state: BJState) -> str:
+    # XXX:FIXME This is a very ugly hack, I should find a way to make BJStates hashable somehow
+    def decide(self, state: str) -> str:
+        # convert state to str for hashing
         if np.random.random() < self.epsilon:
             return random.choice(("hit", "stand"))
         else:
             return self._convert_action_to_str(int(np.argmax(self.q_values[state])))
 
-    def _update(self, state: BJStateQ, action: str, reward: float, terminated: int, next_state: BJStateQ) -> None:
-        # state is BJState but next_state is tuple [int, int, int]??
+    def _update(self, state: str, action: str, reward: float, terminated: int, next_state: str) -> None:
+        # making state and next_state hashable (str instead of BJStateQ)
         _action = self._convert_action_to_int(action)
         if terminated:
             future_q_value = 0.0

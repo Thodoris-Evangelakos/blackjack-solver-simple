@@ -159,8 +159,8 @@ class BlackJackEnv:
 
         self._last_state = self._encode_state()
         if self._done:
-            #pass
-            print(f"Player total: {self.player.hand.hand_value}, dealer total: {self.dealer.hand.hand_value}, reward: {reward}")
+            pass
+            #print(f"Player total: {self.player.hand.hand_value}, dealer total: {self.dealer.hand.hand_value}, reward: {reward}")
         return (self._last_state, reward, self._done, {})
 
     def _dealer_turn(self) -> None:
