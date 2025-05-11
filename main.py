@@ -166,7 +166,6 @@ def eval_agent(table_path: str, episodes: int, rng_seed: int | None) -> None:
             action = env.player.decide(_state)
             state, reward, done, _ = env.step(action)
         if reward == 1:
-            print("WIN")
             wins += 1
         #print(f"\rEpisode {ep + 1}/{episodes} - Wins: {wins}", end="")
 
