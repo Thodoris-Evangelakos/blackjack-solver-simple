@@ -1,10 +1,10 @@
 from __future__ import annotations
 import random
-from typing import Tuple
 from collections import defaultdict
 import numpy as np
 from blackjack_solver_simple.core.players.base import Policy
-from blackjack_solver_simple.core.state import BJState
+from blackjack_solver_simple.core.state import BJState, BJStateQ
+
 
 class DealerPolicy(Policy):
     def decide(self, state: BJState) -> str:
@@ -19,17 +19,21 @@ class DealerPolicy(Policy):
 
 
 class RandomPolicy(Policy):
-
     def decide(self, state: BJState) -> str:
         return random.choice(("hit", "stand"))
 
 
+# can't pickle anything that cointains a lambda function
+def create_q_vector() -> np.ndarray:
+    """Create a Q vector with 2 actions (hit, stand) initialized to 0.0"""
+    return np.zeros(2)
+
 
 class TabularQPolicy(Policy):
-
-    def __init__(self, env:Env,learning_rate: float,initial_epsilon: float,gamma: float):
-        self.env = env
-        self.q_values = defaultdict(lambda: np.zeros(env.action_space.n))
+    # this mf can't win a single round, addicted to busting
+    def __init__(self, learning_rate: float, initial_epsilon: float, gamma: float):
+        # env only helped with action space cardinality (always 2) and sampling
+        self.q_values = defaultdict(create_q_vector)
 
         self.alpha = learning_rate
         self.gamma = gamma
@@ -38,23 +42,39 @@ class TabularQPolicy(Policy):
         self.training_error_qlearning = []
         self.training_error_sarsa = []
 
-
-    def decide(self, state: BJState):
-        if np.random.random() < self.epsilon:
-            return self.env.action_space.sample()
+    def _convert_action_to_str(self, action: int) -> str:
+        if action == 0:
+            return "hit"
+        elif action == 1:
+            return "stand"
         else:
-            return int(np.argmax(self.q_values[BJState]))
-            
-    def _update(self, state: BJState, action: int, reward: float,terminated:int,next_state: tuple[int, int, int]) -> None:
+            raise ValueError(f"Invalid action: {action}")
+
+    def _convert_action_to_int(self, action: str) -> int:
+        if action == "hit":
+            return 0
+        elif action == "stand":
+            return 1
+        else:
+            raise ValueError(f"Invalid action: {action}")
+
+    def decide(self, state: BJState) -> str:
+        if np.random.random() < self.epsilon:
+            return random.choice(("hit", "stand"))
+        else:
+            return self._convert_action_to_str(int(np.argmax(self.q_values[state])))
+
+    def _update(self, state: BJStateQ, action: str, reward: float, terminated: int, next_state: BJStateQ) -> None:
+        # state is BJState but next_state is tuple [int, int, int]??
+        _action = self._convert_action_to_int(action)
         if terminated:
             future_q_value = 0.0
         else:
             future_q_value = np.max(self.q_values[next_state])
 
-        temporal_difference = (reward + self.gamma * future_q_value - self.q_values[state][action] )
+        temporal_difference = (reward + self.gamma * future_q_value - self.q_values[state][_action])
 
-        self.q_values[state][action] = (self.q_values[state][action] + self.alpha * temporal_difference)
+        self.q_values[state][_action] = (self.q_values[state][_action] + self.alpha * temporal_difference)
 
-        #represents the difference between the current Q‑value estimate and the “target” value computed from the reward and the estimated future Q‑values
+        # represents the difference between the current Q‑value estimate and the “target” value computed from the reward and the estimated future Q‑values
         self.training_error_qlearning.append(temporal_difference)
-    

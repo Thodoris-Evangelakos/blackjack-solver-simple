@@ -23,3 +23,13 @@ class BJState(NamedTuple):
     # ~~~~~~~~~~ dealer info ~~~~~~~~~~ #
     dealer_total: int | None
     dealer_soft: bool | None
+
+
+class BJStateQ(NamedTuple):
+    """Same as BJState, but without dealer or card counting info
+    """
+
+    # ~~~~~~~~~~ player info ~~~~~~~~~~ #
+    player_total: int
+    dealer_up: int
+    player_soft: bool
