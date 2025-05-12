@@ -3,7 +3,7 @@ import random
 from typing import Tuple, Any
 
 from blackjack_solver_simple.core.deck import Deck
-from blackjack_solver_simple.core.state import BJState
+from blackjack_solver_simple.core.state import UniversalBJState
 from blackjack_solver_simple.core.players.agent import Agent
 from blackjack_solver_simple.core.players.dealer import Dealer
 from blackjack_solver_simple.core.players.base import Policy
@@ -25,8 +25,8 @@ class BlackJackEnv:
         self.player = Agent(player_policy)
         self.dealer = Dealer()
 
-        self._dealer_up_value: int | None = None
-        self._last_state: BJState | None = None
+        self._dealer_up_value: int
+        self._last_state: UniversalBJState | None = None
         self._done: bool = False
 
     # ~~~~~~~~~~ helper methods ~~~~~~~~~~ #
@@ -38,14 +38,12 @@ class BlackJackEnv:
         """
         self.visible_count += card.hilo_weight()
 
-    def _bin_count(self) -> int | None:
+    def _bin_count(self) -> int:
         """Crude indicator of whether the deck is "hot" or not
 
         Returns:
             int | None: None if we aren't counting cards
         """
-        if self._counting_cards == 1:
-            return None
         if self.visible_count > 5:
             return +1
         elif self.visible_count < -5:
@@ -54,13 +52,13 @@ class BlackJackEnv:
             return 0
 
     # FIXME : COUNT_BIN MUST BE SET, RETURNING 0 PURELY FOR PHASE 0
-    def _encode_state(self) -> BJState:
-        """Returns a BJState object containing the current state of the game.
+    def _encode_state(self) -> UniversalBJState:
+        """Returns aUniversalBJState object containing the current state of the game.
 
         Returns:
-            BJState: current state used to make decisions
+           UniversalBJState: current state used to make decisions
         """
-        state = BJState(
+        state = UniversalBJState(
             player_total=self.player.hand.hand_value,
             dealer_up=self._dealer_up_value,
             player_soft=self.player.hand.is_soft,
@@ -73,17 +71,17 @@ class BlackJackEnv:
     def _reshuffle_if_needed(self) -> None:
         """Reshuffles the deck if there are less than 10 cards left.
         """
-        if self.deck.cards_left() < 10:
+        if self.deck.cards_left() <= 10:
             self.deck = Deck(self.rng)
             self.visible_count = 0
 
     # ~~~~~~~~~~ public API ~~~~~~~~~~ #
 
-    def reset(self) -> BJState:
+    def reset(self) -> UniversalBJState:
         """Start a fresh round, return initial observable state
 
         Returns:
-            BJState: initial state
+            UniversalBJState: initial state
         """
         self._reshuffle_if_needed()
 
@@ -110,7 +108,7 @@ class BlackJackEnv:
         self._last_state = self._encode_state()
         return self._last_state
 
-    def step(self, action: str) -> Tuple[BJState, int, bool, dict[str, Any]]:
+    def step(self, action: str) -> Tuple[UniversalBJState, int, bool, dict[str, Any]]:
         """The standard part of the round, directly after a reset or a hit.
            External logic makes sure this repeats until _done = True is returned
            Once the player stands the torch is passed over to the dealer
@@ -133,6 +131,8 @@ class BlackJackEnv:
             raise ValueError(f"Invalid action: {action}, must be 'hit' or 'stand'")
 
         reward = _DRAW  # default
+        # can't afford to only reshuffle upon reset apparently
+        self._reshuffle_if_needed()
 
         # ~~~~~~~~~~ player action ~~~~~~~~~~ #
         if action == "hit":
@@ -160,7 +160,6 @@ class BlackJackEnv:
         self._last_state = self._encode_state()
         if self._done:
             pass
-            #print(f"Player total: {self.player.hand.hand_value}, dealer total: {self.dealer.hand.hand_value}, reward: {reward}")
         return (self._last_state, reward, self._done, {})
 
     def _dealer_turn(self) -> None:
@@ -181,14 +180,14 @@ class BlackJackEnv:
         # policy based .decide() loop
         while True:
             total, soft = self.dealer.hand.hand_value, self.dealer.hand.is_soft
-            # we only really care about total and soft, can prob remove other values, might piss off BJState definition
-            dealer_state = BJState(
-                player_total=None,
-                dealer_up=self._dealer_up_value,
-                player_soft=None,
-                count_bin=self._bin_count(),  # could be None?
+            # I decided to offload subset-picking to agent level methods
+            dealer_state = UniversalBJState(
+                player_total=self.player.hand.hand_value,
+                dealer_up=self._dealer_up_value,  # unused (?)
+                player_soft=self.player.hand.is_soft,  # unused
+                count_bin=self._bin_count(),  # unused
                 dealer_total=total,
-                dealer_soft=soft,
+                dealer_soft=soft,  # unused (?)
             )
             action = self.dealer.policy.decide(dealer_state)
             if action == "stand":

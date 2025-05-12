@@ -3,11 +3,11 @@ from abc import ABC
 from typing import Protocol
 # care for circular import
 from blackjack_solver_simple.core.hand import Hand
-from blackjack_solver_simple.core.state import BJState, BJStateQ
+from blackjack_solver_simple.core.state import UniversalBJState
 
 
 class Policy(Protocol):
-    def decide(self, state: BJState | BJStateQ) -> str:
+    def decide(self, state: UniversalBJState) -> str:
         ...
 
 
@@ -22,7 +22,7 @@ class Player(ABC):
         """
         self.hand = Hand([])  # empty hand, we'll draw later
 
-    def decide(self, state: BJState) -> str:
+    def decide(self, state: UniversalBJState) -> str:
         """Wrapper so env doesn't directly talk to the policy.
            For actual documentation on this look at policy.decide()
 

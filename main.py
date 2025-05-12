@@ -11,7 +11,6 @@ from configs.hypermarameters import ALPHA, INITIAL_EPSILON, GAMMA
 from blackjack_solver_simple.core.env import BlackJackEnv
 from blackjack_solver_simple.agents.policies import RandomPolicy, TabularQPolicy
 from blackjack_solver_simple.ui.human_cli import HumanCliPolicy
-from blackjack_solver_simple.core.state import BJState, BJStateQ
 
 # ---------------------------------------------------------------------
 # Helper: run ONE round and return reward
@@ -24,7 +23,7 @@ def run_episode(env: BlackJackEnv) -> int:
     while not done:
         action = env.player.decide(state)
         state, reward, done, _ = env.step(action)
-    return reward
+    return reward  # type: ignore
 
 # ---------------------------------------------------------------------
 # Pretty helpers
@@ -77,8 +76,8 @@ def play_human(rng_seed: int | None) -> None:
         print("Dealer hand   :", _fmt_hand(env.dealer.hand))
 
     # ---- Outcome ----
-    outcome = {1: "WIN", 0: "DRAW", -1: "LOSE"}[reward]
-    _banner(f"Result: you {outcome} (reward {reward})")
+    outcome = {1: "WIN", 0: "DRAW", -1: "LOSE"}[reward]  # type: ignore
+    _banner(f"Result: you {outcome} (reward {reward})")  # type: ignore
 
 
 def play_random(episodes: int, rng_seed: int | None) -> None:
@@ -99,19 +98,14 @@ def play_random(episodes: int, rng_seed: int | None) -> None:
     print(f"Win %: {wins / episodes * 100:.2f}")
 
 
-def _phase_1_state_conversion(state: BJState) -> BJStateQ:
+'''def _phase_1_state_conversion(state: BJState) -> BJStateQ:
     player_total, dealer_up, player_soft, _, _, _ = state
-    return BJStateQ(player_total, dealer_up, player_soft)
+    return BJStateQ(player_total, dealer_up, player_soft)'''
 
 
 def _calculate_epsilon(episode: int) -> float:
     # probably assuming initial epsilon == 1 (?)
     return (min(1.0, (2 * np.log(episode + 1))**(1/3) / (episode + 1)**(1/3)))
-
-
-def encode_state(state: BJStateQ) -> str:
-    """Encode the state as a string for use as a dictionary key."""
-    return f"{state.player_total}_{state.dealer_up}_{int(state.player_soft)}"
 
 
 # I don't really like the idea of exposing all of this to main.py, looks really messy
@@ -124,16 +118,13 @@ def train_agent(episodes: int, rng_seed: int | None, save_path: str = "tables/q_
         state = env.reset()
         done = False
         while not done:
-            _state = encode_state(_phase_1_state_conversion(state))
-            action = env.player.decide(_state)
+            action = env.player.decide(state)
             next_state, reward, done, _ = env.step(action)
             # attempting to encode the state as a string for use as a dictionary key
             # this is a bit of a hack, but it works
-            _next_state = encode_state(_phase_1_state_conversion(next_state))
-            policy._update(_state, action, reward, done, _next_state)
+            policy._update(state, action, reward, done, next_state)
             state = next_state
         policy.epsilon = _calculate_epsilon(ep)
-        #print(f"\rEpisode {ep + 1}/{episodes} - Epsilon: {policy.epsilon:.2f}", end="")
 
     with gzip.open(save_path, "wb") as f:
         pickle.dump(policy.q_values, f)
@@ -144,7 +135,6 @@ def eval_agent(table_path: str, episodes: int, rng_seed: int | None) -> None:
     if table_path is None:
         # XXX: I should just make this a default argument
         table_path = "tables/q_table.pkl.gz"
-        #raise ValueError("Model path must be provided for evaluation.")
 
     with gzip.open(table_path, "rb") as f:
         q_table = pickle.load(f)
@@ -160,14 +150,12 @@ def eval_agent(table_path: str, episodes: int, rng_seed: int | None) -> None:
     wins = 0
     for ep in range(episodes):
         state = env.reset()
-        _state = encode_state(_phase_1_state_conversion(state))
         done = False
         while not done:
-            action = env.player.decide(_state)
+            action = env.player.decide(state)
             state, reward, done, _ = env.step(action)
-        if reward == 1:
+        if reward == 1:  # reset never ever returns done == True # type: ignore
             wins += 1
-        #print(f"\rEpisode {ep + 1}/{episodes} - Wins: {wins}", end="")
 
     p_hat = wins / episodes
     ci_half = 1.96 * math.sqrt(p_hat * (1 - p_hat) / episodes)

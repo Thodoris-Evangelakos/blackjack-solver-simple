@@ -3,11 +3,11 @@ import random
 from collections import defaultdict
 import numpy as np
 from blackjack_solver_simple.core.players.base import Policy
-from blackjack_solver_simple.core.state import BJState, BJStateQ
+from blackjack_solver_simple.core.state import UniversalBJState
 
 
 class DealerPolicy(Policy):
-    def decide(self, state: BJState) -> str:
+    def decide(self, state: UniversalBJState) -> str:
         total = state.dealer_total
         soft = state.dealer_soft  # noqa F401
         assert total is not None, "Dealer's total should be revealed/filled in env"
@@ -19,7 +19,7 @@ class DealerPolicy(Policy):
 
 
 class RandomPolicy(Policy):
-    def decide(self, state: BJState) -> str:
+    def decide(self, state: UniversalBJState) -> str:
         return random.choice(("hit", "stand"))
 
 
@@ -59,24 +59,25 @@ class TabularQPolicy(Policy):
             raise ValueError(f"Invalid action: {action}")
 
     # XXX:FIXME This is a very ugly hack, I should find a way to make BJStates hashable somehow
-    def decide(self, state: str) -> str:
+    def decide(self, state: UniversalBJState) -> str:
         # convert state to str for hashing
         if np.random.random() < self.epsilon:
             return random.choice(("hit", "stand"))
         else:
-            return self._convert_action_to_str(int(np.argmax(self.q_values[state])))
+            return self._convert_action_to_str(int(np.argmax(self.q_values[state.hash_Q()])))
 
-    def _update(self, state: str, action: str, reward: float, terminated: int, next_state: str) -> None:
+    def _update(self, state: UniversalBJState, action: str, reward: float, terminated: int, next_state: UniversalBJState) -> None:
         # making state and next_state hashable (str instead of BJStateQ)
         _action = self._convert_action_to_int(action)
         if terminated:
             future_q_value = 0.0
         else:
-            future_q_value = np.max(self.q_values[next_state])
+            future_q_value = np.max(self.q_values[next_state.hash_Q()])
 
-        temporal_difference = (reward + self.gamma * future_q_value - self.q_values[state][_action])
+        temporal_difference = (reward + self.gamma * future_q_value - self.q_values[state.hash_Q()][_action])
 
-        self.q_values[state][_action] = (self.q_values[state][_action] + self.alpha * temporal_difference)
+        self.q_values[state.hash_Q()][_action] = (self.q_values[state.hash_Q()][_action] + self.alpha * temporal_difference)
 
-        # represents the difference between the current Q‑value estimate and the “target” value computed from the reward and the estimated future Q‑values
+        # represents the difference between the current Q‑value estimate and the “target” value
+        # computed from the reward and the estimated future Q‑values
         self.training_error_qlearning.append(temporal_difference)
