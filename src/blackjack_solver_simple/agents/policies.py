@@ -31,16 +31,24 @@ def create_q_vector() -> np.ndarray:
 
 class TabularQPolicy(Policy):
     # this mf can't win a single round, addicted to busting
-    def __init__(self, learning_rate: float, initial_epsilon: float, gamma: float):
+    def __init__(self, learning_rate: float, initial_epsilon: float, gamma: float, counting_enabled: bool = False):
         # env only helped with action space cardinality (always 2) and sampling
         self.q_values = defaultdict(create_q_vector)
 
         self.alpha = learning_rate
         self.gamma = gamma
-
         self.epsilon = initial_epsilon
+
+        self.counting_enabled = counting_enabled
         self.training_error_qlearning = []
         self.training_error_sarsa = []
+
+    def _get_state_key(self, state: UniversalBJState):
+        """Returns the state key for the Q-table"""
+        if self.counting_enabled:
+            return state.hash_Q_counting()
+        else:
+            return state.hash_Q()
 
     def _convert_action_to_str(self, action: int) -> str:
         if action == 0:
@@ -64,19 +72,22 @@ class TabularQPolicy(Policy):
         if np.random.random() < self.epsilon:
             return random.choice(("hit", "stand"))
         else:
-            return self._convert_action_to_str(int(np.argmax(self.q_values[state.hash_Q()])))
+            _state_key = self._get_state_key(state)
+            return self._convert_action_to_str(int(np.argmax(self.q_values[_state_key])))
 
     def _update(self, state: UniversalBJState, action: str, reward: float, terminated: int, next_state: UniversalBJState) -> None:
         # making state and next_state hashable (str instead of BJStateQ)
         _action = self._convert_action_to_int(action)
+        _state_key = self._get_state_key(state)
+        _next_state_key = self._get_state_key(next_state)
         if terminated:
             future_q_value = 0.0
         else:
-            future_q_value = np.max(self.q_values[next_state.hash_Q()])
+            future_q_value = np.max(self.q_values[_next_state_key])
 
-        temporal_difference = (reward + self.gamma * future_q_value - self.q_values[state.hash_Q()][_action])
+        temporal_difference = (reward + self.gamma * future_q_value - self.q_values[_state_key][_action])
 
-        self.q_values[state.hash_Q()][_action] = (self.q_values[state.hash_Q()][_action] + self.alpha * temporal_difference)
+        self.q_values[_state_key][_action] = (self.q_values[_state_key][_action] + self.alpha * temporal_difference)
 
         # represents the difference between the current Q‑value estimate and the “target” value
         # computed from the reward and the estimated future Q‑values
