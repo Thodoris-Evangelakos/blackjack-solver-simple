@@ -41,8 +41,7 @@ class TabularQPolicy(Policy):
 
         self.counting_enabled = counting_enabled
         self.training_error_qlearning = []
-        # XXX
-        self.training_error_sarsa = []
+        self.rewards = []
 
     def _get_state_key(self, state: UniversalBJState):
         """Returns the state key for the Q-table"""
@@ -67,7 +66,6 @@ class TabularQPolicy(Policy):
         else:
             raise ValueError(f"Invalid action: {action}")
 
-    # XXX:FIXME This is a very ugly hack, I should find a way to make BJStates hashable somehow
     def decide(self, state: UniversalBJState) -> str:
         # convert state to str for hashing
         if np.random.random() < self.epsilon:

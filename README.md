@@ -133,7 +133,7 @@ All learning hyperparameters are in [`configs/hypermarameters.py`](configs/hyper
 ```python
 ALPHA = 0.1
 INITIAL_EPSILON = 1.0
-GAMMA = 0.9
+GAMMA = 1
 ```
 
 ## License

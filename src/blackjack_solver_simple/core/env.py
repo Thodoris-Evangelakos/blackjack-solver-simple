@@ -68,10 +68,11 @@ class BlackJackEnv:
         )
         return state
 
-    def _reshuffle_if_needed(self) -> None:
+    def _reshuffle_if_needed(self, initial_stage: bool = False) -> None:
         """Reshuffles the deck if there are less than 10 cards left.
         """
-        if self.deck.cards_left() <= 10:
+        limit = 4 if initial_stage else 1
+        if self.deck.cards_left() <= limit:
             self.deck = Deck(self.rng)
             self.visible_count = 0
 
@@ -83,7 +84,7 @@ class BlackJackEnv:
         Returns:
             UniversalBJState: initial state
         """
-        self._reshuffle_if_needed()
+        self._reshuffle_if_needed(initial_stage=True)
 
         self.player.reset()
         self.dealer.reset()
@@ -179,6 +180,7 @@ class BlackJackEnv:
 
         # policy based .decide() loop
         while True:
+            self._reshuffle_if_needed()
             total, soft = self.dealer.hand.hand_value, self.dealer.hand.is_soft
             # I decided to offload subset-picking to agent level methods
             dealer_state = UniversalBJState(
