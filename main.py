@@ -12,6 +12,8 @@ from blackjack_solver_simple.core.env import BlackJackEnv
 from blackjack_solver_simple.agents.policies import RandomPolicy, TabularQPolicy
 from blackjack_solver_simple.ui.human_cli import HumanCliPolicy
 
+TABLE_DIRECTORY = "tables/"
+
 # ---------------------------------------------------------------------
 # Helper: run ONE round and return reward
 # ---------------------------------------------------------------------
@@ -109,9 +111,10 @@ def _calculate_epsilon(episode: int) -> float:
 
 
 # I don't really like the idea of exposing all of this to main.py, looks really messy
-def train_agent(episodes: int, rng_seed: int | None, save_path: str = "tables/q_table.pkl.gz") -> None:
+def train_agent(episodes: int, rng_seed: int | None, counting_enabled, table_path: str) -> None:
+    table_path = f"{TABLE_DIRECTORY}{table_path}.pkl.gz"
     rng = random.Random(rng_seed)
-    policy = TabularQPolicy(learning_rate=ALPHA, initial_epsilon=INITIAL_EPSILON, gamma=GAMMA)
+    policy = TabularQPolicy(learning_rate=ALPHA, initial_epsilon=INITIAL_EPSILON, gamma=GAMMA, counting_enabled=counting_enabled)
     env = BlackJackEnv(player_policy=policy, rng=rng)
 
     for ep in range(episodes):
@@ -126,15 +129,14 @@ def train_agent(episodes: int, rng_seed: int | None, save_path: str = "tables/q_
             state = next_state
         policy.epsilon = _calculate_epsilon(ep)
 
-    with gzip.open(save_path, "wb") as f:
+    print(table_path)
+    with gzip.open(table_path, "wb") as f:
         pickle.dump(policy.q_values, f)
-    print(f"Q-table saved to {save_path}")
+    print(f"Q-table saved to {table_path}")
 
 
-def eval_agent(table_path: str, episodes: int, rng_seed: int | None) -> None:
-    if table_path is None:
-        # XXX: I should just make this a default argument
-        table_path = "tables/q_table.pkl.gz"
+def eval_agent(episodes: int, rng_seed: int | None, counting_enabled, table_path: str) -> None:
+    table_path = f"{TABLE_DIRECTORY}{table_path}.pkl.gz"
 
     with gzip.open(table_path, "rb") as f:
         q_table = pickle.load(f)
@@ -142,7 +144,8 @@ def eval_agent(table_path: str, episodes: int, rng_seed: int | None) -> None:
     policy = TabularQPolicy(
         learning_rate=0.0,
         initial_epsilon=0.0,
-        gamma=1.0
+        gamma=1.0,
+        counting_enabled=counting_enabled,
     )
     policy.q_values = q_table
     env = BlackJackEnv(player_policy=policy, rng=random.Random(rng_seed))
@@ -169,12 +172,26 @@ def eval_agent(table_path: str, episodes: int, rng_seed: int | None) -> None:
 # ~~~~~~~~~~ argparsing ~~~~~~~~~~~~ #
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Blackjack RL project driver")
-    p.add_argument("--mode",
-                   choices=("human", "random", "train", "eval", "gui"), required=True,
-                   help="Run mode: human, random, train, eval, gui.")
+    p.add_argument(
+        "--mode",
+        choices=("human", "random", "train", "eval"),
+        required=True,
+        help="Run mode: human, random, train, eval."
+    )
+    p.add_argument(
+        "--interface",
+        choices=("cli", "gui"),
+        default="cli",
+        help="UI interface to use when mode=human (cli or gui)."
+    )
+    p.add_argument(
+        "--count",
+        action="store_true",
+        help="If set, allow card counting in the environment."
+    )
     p.add_argument("--episodes", type=int, default=10,
                    help="Episodes for --mode random (default 10).")
-    p.add_argument("--model", type=str, default=None,
+    p.add_argument("--model", type=str, default="default_table",
                    help="Path to q table to load ")
     p.add_argument("--seed", type=int, default=None,
                    help="Optional RNG seed for reproducibility.")
@@ -184,13 +201,29 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     if args.mode == "human":
-        play_human(args.seed)
+        play_human(
+            rng_seed=args.seed
+            #interface=args.interface, # noqa e265
+        )
     elif args.mode == "random":
-        play_random(args.episodes, args.seed)
+        play_random(
+            episodes=args.episodes,
+            rng_seed=args.seed,
+        )
     elif args.mode == "train":
-        train_agent(args.episodes, args.seed)
+        train_agent(
+            episodes=args.episodes,
+            rng_seed=args.seed,
+            counting_enabled=args.count,
+            table_path=args.model,
+        )
     elif args.mode == "eval":
-        eval_agent(args.model, args.episodes, args.seed)
+        eval_agent(
+            episodes=args.episodes,
+            rng_seed=args.seed,
+            counting_enabled=args.count,
+            table_path=args.model,
+        )
 
 
 if __name__ == "__main__":
