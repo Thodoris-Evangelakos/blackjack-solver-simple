@@ -40,6 +40,7 @@ class TabularQPolicy(Policy):
 
         self.epsilon = initial_epsilon
         self.training_error_qlearning = []
+        # XXX
         self.training_error_sarsa = []
 
     def _convert_action_to_str(self, action: int) -> str:
