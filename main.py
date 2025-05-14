@@ -295,6 +295,7 @@ def visualize_policy_tabular(
     plt.tight_layout()
     plt.show()
 
+
 # ~~~~~~~~~~ argparsing ~~~~~~~~~~~~ #
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Blackjack RL project driver")
