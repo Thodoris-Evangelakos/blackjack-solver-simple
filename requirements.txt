@@ -1,3 +1,5 @@
 numpy
 pytest
 nicegui>=1.4
+pandas
+matplotlib
