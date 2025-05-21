@@ -174,6 +174,9 @@ def eval_agent(episodes: int, rng_seed: int | None, counting_enabled, table_path
     print(f"Win-rate     : {p_hat*100:.2f} %")
     print(f"95 % CI      : ({(p_hat-ci_half)*100:.2f} %, {(p_hat+ci_half)*100:.2f} %)")
 
+    policy_visualization(policy)
+    visualize_policy_tabular(policy, title="Greedy policy after training")
+
 
 def policy_visualization(policy: TabularQPolicy) -> None:
     rolling_window = 1000
