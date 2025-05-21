@@ -49,6 +49,9 @@ source .venv/bin/activate  # Linux/macOS
 
 # Install dependencies
 pip install -r requirements.txt
+
+# Treat this as a package
+pip install -e .
 ```
 
 ## Usage
