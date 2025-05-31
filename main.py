@@ -76,7 +76,7 @@ def play_human(rng_seed: int | None) -> None:
             break  # stand → dealer turn handled inside env.step()
 
     # ---- Dealer reveal & play already happened if you stood ----
-    if env.dealer.hole_card is None:              # hole has been revealed
+    if env.dealer.hole_card is None:  # hole has been revealed
         _banner("Dealer's final hand")
         print("Dealer hand   :", _fmt_hand(env.dealer.hand))
 
@@ -230,7 +230,7 @@ def visualize_policy_tabular(
     """
     Draw heat-maps of the greedy action stored in `policy.q_values`.
 
-    • 0 = hit   • 1 = stand   • 2 = state never visited  
+    • 0 = hit   • 1 = stand   • 2 = state never visited
     Colours: green (hit) ▸ black (stand) ▸ light-grey (no-data)
 
     If `policy.counting_enabled` is True we display one pair of
@@ -241,6 +241,7 @@ def visualize_policy_tabular(
     n_dealer = dealer_max - dealer_min + 1
 
     # decide how many columns we need
+    # these are "hotness" indicators, and they're based on the current count
     count_bins = (-1, 0, +1) if policy.counting_enabled else (None,)
     ncols = len(count_bins)
 

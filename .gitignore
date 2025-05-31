@@ -7,3 +7,6 @@
 src/blackjack_solver_simple.egg-info
 tables/counting_enabled_gamma_1.pkl.gz
 tables/counting_enabled_small_limiter.pkl.gz
+report.log
+report.aux
+phase-2-roadmap

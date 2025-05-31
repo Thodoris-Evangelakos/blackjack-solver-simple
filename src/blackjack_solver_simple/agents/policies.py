@@ -67,6 +67,18 @@ class TabularQPolicy(Policy):
             raise ValueError(f"Invalid action: {action}")
 
     def decide(self, state: UniversalBJState) -> str:
+        """ Decides whether to hit or stand based on the current state.
+        This method implements an epsilon-greedy policy for action selection.
+        It chooses a random action with probability epsilon, and the best action
+        according to the Q-values with probability 1 - epsilon.
+
+        Args:
+            state (UniversalBJState): The current state of the game, which includes the player's total,
+                the dealer's total, and whether the player has a soft hand.
+
+        Returns:
+            str: The action to take, either "hit" or "stand".
+        """
         # convert state to str for hashing
         if np.random.random() < self.epsilon:
             return random.choice(("hit", "stand"))
@@ -75,6 +87,18 @@ class TabularQPolicy(Policy):
             return self._convert_action_to_str(int(np.argmax(self.q_values[_state_key])))
 
     def _update(self, state: UniversalBJState, action: str, reward: float, terminated: int, next_state: UniversalBJState) -> None:
+        """Updates the Q-values based on the action taken and the reward received.
+        This method implements the Q-learning update rule. It calculates the temporal difference
+        and updates the Q-value for the state-action pair.
+
+        Args:
+            state (UniversalBJState): _current state of the game, which includes the player's total,
+                the dealer's total, and whether the player has a soft hand.
+            action (str): _action taken by the agent, either "hit" or "stand".
+            reward (float): _reward received after taking the action in the current state.
+            terminated (int): _flag indicating whether the episode has ended (1 if terminated, 0 otherwise).
+            next_state (UniversalBJState): _next state of the game after taking the action.
+        """
         # making state and next_state hashable (str instead of BJStateQ)
         _action = self._convert_action_to_int(action)
         _state_key = self._get_state_key(state)
